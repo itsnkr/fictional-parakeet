@@ -1,0 +1,122 @@
+/*This small project classifies breast cancer as benign or malignant. The dataset used is from scikit learn library
+
+*****Loading necessary libraries*****
+import pandas as pd
+import numpy  as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+****loading dataset******
+from sklearn.datasets import load_breast_cancer
+
+cancer=load_breast_cancer()
+
+*****creating the dataframe*******
+data=pd.DataFrame(np.c_[cancer['data'],cancer['target']],columns=np.append(cancer['feature_names'],['target']))
+
+*******creating pairplot,scatterplot to see the relationships among features******
+sns.pairplot(data,vars=['mean radius','mean texture','mean perimeter','mean area','mean smoothness'],hue='target')
+sns.countplot(data['target'])
+sns.scatterplot(x='mean radius',y='mean smoothness',hue='target',data=data)
+
+****creating heatmap to see correlation matrix among features*****
+plt.figure(figsize=(20,10))
+sns.heatmap(data.corr(),annot=True)
+
+******Splitting dataset into train and test*******
+x=data.drop('target',1)//all feature variables in X
+y=data['target']// target variablein Y
+
+****Importing train test split function from scikit learn library*****
+from sklearn.model_selection import train_test_split
+
+****setting up variables with the test size of 20%****
+xtrain,xtest,ytrain,ytest=train_test_split(x,y,test_size=0.2,random_state=5)
+
+xtrain
+ytrain
+
+*****Importing support vector classifier, confusion matrix and class.report*****
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report, confusion_matrix
+
+****Initialising an object and then training the model for svc****
+svc_model= SVC()
+svc_model.fit(xtrain,ytrain)
+ypred=svc_model.predict(xtest) // prediction of y
+
+******confusion matrix*****
+cm = confusion_matrix(ytest,ypred)
+
+
+******Here we do data normalisation. We scale our variables so they lie in range [0,1]******
+*****Scaled X= (X-Xmin)/(Xmax-Xmin)*****
+
+mintrain= xtrain.min()//minimum X
+maxtrain=xtrain.max()// maximum of X
+rangetrain=(xtrain-mintrain).max()// range of X which is Xmax-Xmin
+scaled= (xtrain-mintrain)/rangetrain// scaled X
+
+*****Checking scatterplot to see the better view among scaled vars*****
+sns.scatterplot(x=scaled['mean area'],y=scaled['mean smoothness'],hue=ytrain)
+
+******Doing sclaing for test data******
+mintest=xtest.min()
+maxtest=xtest.max()
+rangetest=(xtest-mintest).max()
+scaledt=(xtest-mintest)/rangetest
+
+****fitting our model to scaled vars***
+svc_model.fit(scaled,ytrain)
+
+****Prediction******
+ypred1 = svc_model.predict(scaledt)
+
+****confusion matrix*****
+cm = confusion_matrix(ytest,ypred1) 
+
+*****correlation matrix******
+sns.heatmap(cm,annot=True)
+
+******classification report*******
+print(classification_report(ytest,ypred1))
+
+
+*****Optimization of SVC parameters- C and gamma parameters. Here we create a grid with range set for C and gamma.******
+param_grid = {'C': [0.1,1,10,100], 'gamma':[1,0.1,0.01,0.001], 'kernel':['rbf']}  // rbf = radial basis function
+
+from sklearn.model_selection import GridSearchCV
+
+****search our grid and fit our model with best values of C and gamma****
+grid = GridSearchCV(SVC(),param_grid,refit=True,verbose=4)
+grid.fit(scaled, ytrain)
+
+***best values for C and gamma****
+grid.best_params_ //C=10 , gamma=0.1
+
+****prediction of y, confusion matrix and calssification report with best values of C and gamma****
+grid_preds= grid.predict(scaledt)
+cm = confusion_matrix(ytest,grid_preds)
+sns.heatmap(cm,annot=True)
+print(classification_report(ytest,grid_preds))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
